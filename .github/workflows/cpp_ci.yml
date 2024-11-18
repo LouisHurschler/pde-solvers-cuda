@@ -1,0 +1,39 @@
+name: PDE Solvers CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Micromamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-file: environment.yml
+        init-shell: bash
+        cache-environment: true
+    
+    - name: Install dependencies
+      shell: bash -l {0}
+      run: |
+        micromamba install -c conda-forge gcc gxx cmake hdf5 libnetcdf python netcdf4
+    
+    - name: Configure CMake
+      shell: bash -l {0}
+      run: cmake -B ${{github.workspace}}/build -DENABLE_CUDA=OFF
+    
+    - name: Build
+      shell: bash -l {0}
+      run: cmake --build ${{github.workspace}}/build
+    
+    - name: Test
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/build
+      run: ctest --output-on-failure
